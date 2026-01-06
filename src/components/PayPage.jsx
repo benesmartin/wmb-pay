@@ -4,6 +4,8 @@ import ReactCountryFlag from "react-country-flag";
 import { Download } from "lucide-react";
 
 const MAX_AMOUNT = 100_000;
+const CURRENCY = "CZK";
+const REVOLUT_HANDLE = "benesmartin";
 
 function writeAmountToPath(val) {
   const base = "/";
@@ -22,6 +24,7 @@ function writeAmountToPath(val) {
 
 const PayPage = ({ urlAmount }) => {
   const [amount, setAmount] = useState(urlAmount ?? "");
+  const [method, setMethod] = useState("spd");
   const qrRef = useRef(null);
 
   useEffect(() => {
@@ -92,7 +95,9 @@ const PayPage = ({ urlAmount }) => {
       canvas.toBlob((blob) => {
         if (!blob) return;
         const url = URL.createObjectURL(blob);
-        const filename = `pay-wmb-${amount === "" ? "0" : amount}.png`;
+        const filename = `pay-wmb-${
+          amount === "" ? "0" : amount
+        }-${method.toLowerCase()}.png`;
 
         const a = document.createElement("a");
         a.href = url;
@@ -111,10 +116,31 @@ const PayPage = ({ urlAmount }) => {
     img.src = svgUrl;
   }
 
-  const spdAmount = (() => {
+  const normalizedHandle = REVOLUT_HANDLE.replace(/^@+/, "");
+  const hasRevolutHandle = normalizedHandle.length > 0;
+
+  const parsedAmount = (() => {
     const n = Number.parseFloat((amount || "0").replace(",", "."));
-    return Number.isFinite(n) ? String(n) : "0";
+    return Number.isFinite(n) && n >= 0 ? n : 0;
   })();
+
+  const spdAmount = Number.isFinite(parsedAmount) ? String(parsedAmount) : "0";
+  const revolutAmount = parsedAmount.toFixed(2);
+
+  const spdValue = `SPD*1.0*ACC:CZ4108000000005808886003*AM:${spdAmount}*CC:${CURRENCY}*MSG:*RN:MARTIN BENEŠ*X-VS:*`;
+  const revolutValue = hasRevolutHandle
+    ? `https://revolut.me/${encodeURIComponent(
+        normalizedHandle
+      )}?amount=${encodeURIComponent(
+        revolutAmount * 100
+      )}&currency=${encodeURIComponent(CURRENCY)}`
+    : "";
+  const qrValue =
+    method === "revolut" && hasRevolutHandle ? revolutValue : spdValue;
+  const qrTitle =
+    method === "revolut" && hasRevolutHandle
+      ? `Revolut payment to ${normalizedHandle} (${CURRENCY} ${revolutAmount})`
+      : `QR payment to MARTIN BENES (${CURRENCY} ${spdAmount})`;
 
   return (
     <main className="max-w-7xl w-full mx-auto md:mt-20 p-5 relative z-40 text-white roboto-regular rounded-xl text-center">
@@ -123,14 +149,40 @@ const PayPage = ({ urlAmount }) => {
         <span className="text-lg text-[#f1ee00]">by wmb</span>
       </h1>
 
-      <div className="relative mx-auto w-full max-w-32 border-4 rounded-md mt-4">
+      <div className="flex justify-center gap-3 mt-5">
+        <button
+          type="button"
+          onClick={() => setMethod("spd")}
+          className={`px-4 py-2 rounded-md border-2 transition text-sm font-semibold cursor-pointer ${
+            method === "spd"
+              ? "bg-white text-black border-white"
+              : "bg-transparent text-white border-white/40 hover:border-white"
+          }`}
+        >
+          Bank transfer
+        </button>
+        <button
+          type="button"
+          onClick={() => setMethod("revolut")}
+          disabled={!hasRevolutHandle}
+          className={`px-4 py-2 rounded-md border-2 transition text-sm font-semibold flex items-center gap-2 cursor-pointer ${
+            method === "revolut"
+              ? "bg-white text-black border-white"
+              : "bg-transparent text-white border-white/40 hover:border-white"
+          }`}
+        >
+          Revolut
+        </button>
+      </div>
+
+      <div className="relative mx-auto w-full max-w-32 border-4 rounded-md mt-6">
         <div ref={qrRef}>
           <QRCode
             size={1024}
             className="w-full h-auto max-w-full"
-            value={`SPD*1.0*ACC:CZ4108000000005808886003*AM:${spdAmount}*CC:CZK*MSG:*RN:MARTIN BENEŠ*X-VS:*`}
+            value={qrValue}
             viewBox="0 0 256 256"
-            title={`QR payment to MARTIN BENES (CZK ${spdAmount})`}
+            title={qrTitle}
           />
         </div>
 
