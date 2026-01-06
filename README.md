@@ -13,6 +13,8 @@ Napíšeš částku -> vygeneruje se QR -> načteš v bankovnictví -> hotovo.
 - kontrola částky (max. **100 000 CZK**)
   - chceš poslat víc? napiš, domluvíme se 🤝
 - QR podle standardu **SPD 1.0** (české banky to umí)
+- možnost QR pro Revolut
+  - *trochu zlobí skenování přímo v aplikaci, kde se načte účet bez částky, ale v prohlížeči to funguje 🤔*
 - možnost stáhnout si **.png ve vysokém rozlišení**
 - pozadí s poletujícími geometry dash coiny (styl)
 
